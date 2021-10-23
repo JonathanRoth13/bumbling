@@ -1,0 +1,3 @@
+[submodule "exif"]
+	path = exif
+	url = https://gitlab.com/TNThieding/exif.git
