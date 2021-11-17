@@ -7,51 +7,185 @@ import os
 import platform
 import re
 import time
+import getopt
+import sys
+import glob
 from datetime import datetime
 from exif import Image
 
 def main():
 
-    # specify 00-99
-    mode_iterate=False
+    #   *** begin argument validation ***
 
-    # specify grouping
-    mode_grouping=False
+    #   0   include only images with valid exif date
+    #   1   include only images
+    #   2   include all files
+    mode_include = 0
 
-    # specify directory
-    path_directory_input = ""
-    path_directory_output = ""
+    #   true    copy into output directory
+    #   false   do not copy into output directory
+    mode_copy = False
 
-    # specify undefined files
-    mode_rename_no_exif_=False
-    str_rename_no_exif=""
+    #   0   do not create new directories
+    #   n>0 create a new directorys for groups of a size greater than or equal to n
+    mode_group = 0
 
-    # specify non-image file
-    mode_rename_non_image = False
-    str_rename_non_image = ""
-
-    # specify if the program should move files or copy them to output directory
-    mode_copy=False
-
-    # specify verbose
-    mode_verbose = False
-
-    # specify help
+    #   true    display help message
+    #   false   do not display help message
     mode_help = False
 
-    # specify permutation
     # 0	datetime > datetime_digitized > datetime_original
     # 1	datetime > datetime_original > datetime_digitized
     # 2	datetime_digitized > datetime > datetime_original
     # 3	datetime_digitized > datetime_original > datetime
     # 4	datetime_original > datetime > datetime_digitized
     # 5	datetime_original > datetime_digitized > datetime
-    mode_permutation=0
+    mode_permutation = 0
 
-    #   todo:   remove hardcode
-    path_directory_input = "sample_input"
-    path_directory_output = "sample_ouput"
-    str_rename_no_exif="9999-99-99_"
+    #   true    recurse through directories and do this for all files
+    #   false   do not recurse
+    mode_recursive = False
+
+    #   true    rename grouped files chronologically
+    #   false   do not rename grouped files chronologically
+    mode_rename = False
+
+    #   what to prefix files with
+    #   default is "yyyy-mm-dd_"
+    mode_include_prefix = "%Y-%m-%d_" 
+
+    mode_exclude_prefix = ""
+
+    #   input directory
+    path_directory_input = None
+
+    #   output directory
+    path_directory_output = None
+
+    try:
+        optlist, args = getopt.getopt(sys.argv[1:],"chrwx",["g=","help","i=","p="])
+    except getopt.GetoptError as err:
+        print(err)
+        usage()
+        sys.exit(2)
+    for o, a in optlist:
+        if(o=="-c"):
+            mode_copy = True
+            continue
+        if(o=="--g"):
+            if not a.isnumeric():
+                print("--g must specify an integer")
+                usage()
+                sys.exit(2)
+            x = int(a)
+            if(x>1):
+                print("--g must be greater than 0")
+                usage()
+                sys.exit(2)
+            mode_group = x
+            continue
+        if(o in ["-h", "--help"]):
+                usage()
+                sys.exit(0)
+        if(o=="--i"):
+            if not a.isnumeric():
+                print("--i must specify an integer")
+                usage()
+                sys.exit(2)
+            x = int(a)
+            if(x<0 or x>2):
+                print("--i must be between 0 and 2")
+                usage()
+                sys.exit(2)
+            mode_include = x
+            continue
+        if(o=="--p"):
+            if not a.isnumeric():
+                print("--p must specify an integer")
+                usage()
+                sys.exit(2)
+            x = int(a)
+            if(x<0 or x>5):
+                print("--p must be between 0 and 5")
+                usage()
+                sys.exit(2)
+            mode_permutation = x
+            continue
+        if(o=="-r"):
+            mode_recursive = True
+            continue
+        if(o=="-x"):
+            mode_rename = True
+            continue
+        if(o=="--y"):
+            mode_include_prefix = a
+            continue
+        if(o=="--x"):
+            mode_exclude_prefix = a
+            continue
+        print("invalid argument")
+        usage()
+        sys.exit(2)
+
+
+    if(len(args)==0):
+        path_directory_input=os.getcwd()
+        path_directory_output=os.getcwd()
+    elif(len(args)==1):
+        path_directory_input=args[0]
+        path_directory_output=os.getcwd()
+    elif(len(args)==2):
+        path_directory_input=args[0]
+        path_directory_output=args[1]
+    else:
+        usage()
+        sys.exit(2)
+
+    if(os.path.isdir(path_directory_input)):
+        path_directory_input=os.path.abspath(path_directory_input)
+    else:
+        if(os.path.isdir(os.path.abspath(path_directory_input))):
+            path_directory_input = os.path.abspath(path_directory_input)
+        else:
+            print(path_directory_input," is not a valid path",sep="")
+            usage()
+            sys.exit(2)
+    if(os.path.isdir(path_directory_output)):
+        path_directory_output=os.path.abspath(path_directory_output)
+    else:
+        if(os.path.isdir(os.path.abspath(path_directory_output))):
+            path_directory_output = os.path.abspath(path_directory_output)
+        else:
+            print(path_directory_output," is not a valid path",sep="")
+            usage()
+            sys.exit(2)
+
+    #   *** end argument validation ***
+
+    list_files_input=glob.glob(path_directory_input+"/**",recursive=mode_recursive)
+
+    for a in list_files_input:
+        print(a)
+
+
+
+
+
+
+    return
+
+
+
+
+
+    
+     
+
+
+
+
+
+
 
     yeah = list()
 
@@ -228,6 +362,9 @@ def get_date_os(path_to_file):
         except AttributeError:
             date_c = stat.st_mtime
     return datetime.fromtimestamp(date_c).strftime("%Y-%m-%d_")
+
+def usage():
+    print("they call me saturday")
 
 if __name__ == "__main__":
     main()
