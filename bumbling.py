@@ -10,6 +10,7 @@ import time
 import getopt
 import sys
 import glob
+import warnings
 from datetime import datetime
 from exif import Image
 
@@ -17,10 +18,9 @@ def main():
 
     #   *** begin argument validation ***
 
-    #   0   include only images with valid exif date
-    #   1   include only images
-    #   2   include all files
-    mode_include = 0
+    #   False   include only images with valid exif date
+    #   True   include all images
+    mode_include = False
 
     #   true    copy into output directory
     #   false   do not copy into output directory
@@ -87,17 +87,18 @@ def main():
         if(o in ["-h", "--help"]):
                 usage()
                 sys.exit(0)
-        if(o=="--i"):
-            if not a.isnumeric():
-                print("--i must specify an integer")
-                usage()
-                sys.exit(2)
-            x = int(a)
-            if(x<0 or x>2):
-                print("--i must be between 0 and 2")
-                usage()
-                sys.exit(2)
-            mode_include = x
+        if(o=="-i"):
+            mode_include = True
+            #if not a.isnumeric():
+            #    print("--i must specify an integer")
+            #    usage()
+            #    sys.exit(2)
+            #x = int(a)
+            #if(x<0 or x>2):
+            #    print("--i must be between 0 and 2")
+            #    usage()
+            #    sys.exit(2)
+            #mode_include = x
             continue
         if(o=="--p"):
             if not a.isnumeric():
@@ -160,34 +161,29 @@ def main():
             usage()
             sys.exit(2)
 
-    #   *** end argument validation ***
+    bumbling(mode_include, mode_copy, mode_group, mode_permutation, mode_recursive, mode_rename, mode_include_prefix, mode_exclude_prefix, path_directory_input, path_directory_output)
 
-    list_files_input=glob.glob(path_directory_input+"/**",recursive=mode_recursive)
-
-    for a in list_files_input:
-        print(a)
-
-
-
-
-
-
-    return
+def bumbling(mode_include, mode_copy, mode_group, mode_permutation, mode_recursive, mode_rename, mode_include_prefix, mode_exclude_prefix, path_directory_input, path_directory_output):
+    list_files_input=[]
+    list_files_input.extend(glob.glob(path_directory_input+"/**.png",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+"/**.PNG",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+"/**.jpg",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+"/**.JPG",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+"/**.jpeg",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+"/**.JPEG",recursive=mode_recursive))
 
 
+    yeah=list()
 
-
-
-    
-     
+    for path in list_files_input:
+        print(path, get_date_exif(path, mode_permutation))
+    return None
 
 
 
 
 
 
-
-    yeah = list()
 
     # regex for YYYY-mm-dd_
     pattern=re.compile("\d\d\d\d-\d\d-\d\d_")
@@ -233,6 +229,9 @@ def get_date_exif(path, mode_permutation):
         flag_exif=False
         flag_no_exif=False
         flag_error=False
+
+        if not sys.warnoptions:
+            warnings.simplefilter("ignore","ASCII tag contains 1 fewer bytes than specified")
 
         with open(path,"rb") as image_file:
             try:
@@ -342,13 +341,18 @@ def get_date_exif(path, mode_permutation):
                         if(str_datetime != None and str_datetime != "" and str_datetime != "0000:00:00 00:00:00"):
                             str_datetime_select=str_datetime
                         break   
-                if(str_datetime_select != None):
-                    return (str_datetime_select[0:4]+"-"+str_datetime_select[5:7]+"-"+str_datetime_select[8:10]+"_")
-                    str_datetime_select = str_datetime_select[0:11]
-                    str_datetime_select[4]="-"
-                    str_datetime_select[6]="-"
-                    str_datetime_select[11]="_"
-                return None
+                if(str_datetime_select == None):
+                    return None
+                
+                try:
+                    a = time.strptime(str_datetime_select,"%Y:%m:%d %H:%M:%S")
+                except ValueError:
+                    return None
+                return a
+
+
+
+
 
 #   returns a string representing the date created if available, otherwise the date modified
 def get_date_os(path_to_file):
