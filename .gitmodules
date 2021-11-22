@@ -1,6 +1,6 @@
-[submodule "exif"]
-	path = exif
-	url = https://gitlab.com/TNThieding/exif.git
-[submodule "Multi-threaded-downloader"]
-	path = Multi-threaded-downloader
-	url = https://github.com/invincible-akshay/Multi-threaded-downloader.git
+[submodule "pyexiv2"]
+	path = pyexiv2
+	url = https://github.com/LeoHsiao1/pyexiv2.git
+[submodule "exif-py"]
+	path = exif-py
+	url = https://github.com/ianare/exif-py.git
