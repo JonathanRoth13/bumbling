@@ -36,6 +36,10 @@ def main():
     #   false   do not recurse
     mode_recursive = False
 
+    #   true    rename
+    #   false   do not rename
+    mode_rename = False
+
     #   what to prefix files with
     #   default is "yyyy-mm-dd_"
     mode_include_prefix = "%Y-%m-%d_" 
@@ -47,7 +51,7 @@ def main():
     path_directory_output = None
 
     try:
-        optlist, args = getopt.getopt(sys.argv[1:],"chr",["help","i=","p="])
+        optlist, args = getopt.getopt(sys.argv[1:],"chrx",["help","i=","p="])
     except getopt.GetoptError as err:
         print(err)
         usage()
@@ -75,6 +79,8 @@ def main():
         if(o=="-r"):
             mode_recursive = True
             continue
+        if(o=="-x"):
+            mode_rename = True
         usage()
         sys.exit(2)
 
@@ -163,23 +169,87 @@ def bumbling(mode_copy, mode_include_prefix, mode_permutation, mode_recursive, p
     list_files_input.extend(glob.glob(path_directory_input+"/**/*.heic",recursive=mode_recursive))
     list_files_input.extend(glob.glob(path_directory_input+"/**/*.HEIC",recursive=mode_recursive))
 
-    list_files_ouput = list()
+    list_files_output = list()
 
     for path in list_files_input:
         datetime = None
         if(path.endswith(".heic") or path.endswith(".HEIC")):
-            continue
             datetime = get_exif_datetime_heic(path, mode_permutation)
         else:
             datetime = get_exif_datetime(path, mode_permutation)
-    return None
+        if(datetime != None):
+            list_files_output.append([path, datetime])
+
+
+    if(len(list_files_output)==0):
+        return None
+
+    sort = sorted(list_files_output, key=lambda i:os.path.dirname(i[0]))
+
+
+    yeah = os.path.dirname(sort[0][0])
+    boxes = list()
+    box = list()
+    for a in sort:
+        if(os.path.dirname(a[0])==yeah):
+            box.append(a)
+        else:
+            yeah=os.path.dirname(a[0])
+            boxes.append(box)
+            box=[a]
+    boxes.append(box)
+
+
+    sort_boxes=list()
+
+    for box in boxes:
+        sort_boxes.append(sorted(box, key=lambda i:i[1]))
+
+
+    #for box in sort_boxes:
+    #    for a in box:
+    #        print(a[0],a[1],sep="\n",end="\n---\n")
+    #    print("---end---")
+
+
+    for box in sort_boxes:
+        for a in box:
+            b,c = os.path.split(a[0])
+            d = os.path.commonpath([path_directory_input, b])
+            e = c.split(".")[-1]
+            f = c[:-(len(e)+1)]
+            g=a[1].strftime(mode_include_prefix)
+            print(a[0],b,c,d,e,f,g,sep="\n",end="\n---\n")
+        print("---end---")
+
+
 
 def get_exif_datetime(path, mode_permutation):
-    f = pyexiv2.Image(path)
-    tags = f.read_exif()
-    f.close()
-    print(tags)
-    return None
+
+    #   read exif data
+    f = pyexiv2.metadata.ImageMetadata(path)
+    f.read()
+
+    #   find datetime data
+    dtime=None
+    dtime_original=None
+    dtime_digitized=None
+    try:
+        dtime=f.__getitem__("Exif.Image.DateTime").value
+    except KeyError:
+        a=None
+    try:
+        dtime_original=f.__getitem__("Exif.Photo.DateTimeOriginal").value
+    except KeyError:
+        a=None
+    try:
+        dtime_digitized=f.__getitem__("Exif.Photo.DateTimeDigitized").value
+    except KeyError:
+        a=None
+
+    return get_datetime_helper(dtime, dtime_original, dtime_digitized, mode_permutation)
+
+
 
 def get_exif_datetime_heic(path, mode_permutation):
     
@@ -189,155 +259,85 @@ def get_exif_datetime_heic(path, mode_permutation):
     f.close()
 
     #   find datetime data
-    str_datetime_original=None
-    str_datetime_digitized=None
-    str_datetime=None
-    str_select=None
+    dtime=None
+    dtime_original=None
+    dtime_digitized=None
     try:
-        str_datetime_original=tags["EXIF DateTimeDigitized"]
-    except KeyError:
+        #dtime=datetime.strptime(tags["Image DateTime"].values, "%d/%m/%Y %H:%M:%S")
+        dtime=tags["Image DateTime"].values
+    except (KeyError, AttributeError) as e:
         a=None
     try:
-        str_datetime_digitized=tags["EXIF DateTimeOriginal"]
-    except KeyError:
+        #datetime_original=datetime.strptime(tags["EXIF DateTimeDigitized"].values, "%d/%m/%Y %H:%M:%S")
+        dtime_original=tags["EXIF DateTimeDigitized"].values
+    except (KeyError, AttributeError) as e:
         a=None
     try:
-        str_datetime=tags["Image DateTime"]
-    except KeyError:
+        #dtime_digitized=datetime.strptime(tags["EXIF DateTimeOriginal"].values, "%d/%m/%Y %H:%M:%S")
+        dtime_digitized=tags["EXIF DateTimeOriginal"].values
+    except (KeyError, AttributeError) as e:
         a=None
+
+    if(dtime != None):
+        dtime = datetime.strptime(dtime, "%Y:%m:%d %H:%M:%S")
+    if(dtime_original != None):
+        dtime_original = datetime.strptime(dtime_original, "%Y:%m:%d %H:%M:%S")
+    if(dtime != None):
+        dtime_diditized = datetime.strptime(dtime_digitized, "%Y:%m:%d %H:%M:%S")
+
+    return get_datetime_helper(dtime, dtime_original, dtime_digitized, mode_permutation)
+
+
+def get_datetime_helper(dtime, dtime_original, dtime_digitized, mode_permutation):
+    if(mode_permutation==0):
+        if(dtime != None):
+            return dtime
+        if(dtime_digitized != None):
+            return dtime_digitized
+        if(dtime_original != None):
+            return dtime_original
+    # 1	datetime > datetime_original > datetime_digitized
+    if(mode_permutation==1):
+        if(dtime != None):
+            return dtime
+        if(dtime_original != None):
+            return dtime_original
+        if(dtime_digitized != None):
+            return dtime_digitized
+    # 2	datetime_digitized > datetime >datetime_original
+    if(mode_permutation==2):
+        if(dtime_digitized != None):
+            return dtime_digitized
+        if(dtime != None):
+            return dtime
+        if(dtime_original != None):
+            return dtime_original
+    # 3	datetime_digitized > datetime_original > datetime
+    if(mode_permutation==3):
+        if(dtime_digitized != None):
+            return dtime_digitized
+        if(dtime_original != None):
+            return dtime_original
+        if(dtime != None):
+            return dtime
+    # 4	datetime_original > datetime > datetime_digitized
+    if(mode_permutation==4):
+        if(dtime_original != None):
+            return dtime_original
+        if(dtime != None):
+            return dtime
+        if(dtime_digitized != None):
+            return dtime_digitized
+    # 5	datetime_original > datetime_digitized > datetime
+    if(mode_permutation==5):
+        if(dtime_original != None):
+            return dtime_original
+        if(dtime_digitized != None):
+            return dtime_digitized
+        if(dtime != None):
+            return dtime
     return None
-
-
-
-
-
-'''
-def get_date_exif(path, mode_permutation):
-    
-        flag_exif=False
-        flag_no_exif=False
-        flag_error=False
-
-        if not sys.warnoptions:
-            warnings.simplefilter("ignore","ASCII tag contains 1 fewer bytes than specified")
-
-        with open(path,"rb") as image_file:
-            try:
-                image = Image(image_file)
-                if(image.has_exif):
-                    flag_exif=True
-                else:
-                    flag_no_exif=True
-
-            # catch exceptions resulting from "%d is not a valid TiffByteOrder"
-            except:
-                flag_error=True
-            if(flag_error):
-                #   debug
-                #print("file is either not an image or and image that does not contain exif data")
-                return None
-            if(flag_no_exif):
-                #   debug
-                #print("file is an image than does not contain exif data")
-                return None
-            if(flag_exif):
-                str_datetime_original=None
-                str_datetime_digitized=None
-                str_datetime=None
-                # catch exceptions resulting from "image does not have attribute %s                
-                try:
-                    str_datetime_orginal=image.datetime_original
-                except:
-                    #nothing operation
-                    a=None
-                try:
-                    str_datetime_digitized=image.datetime_digitized
-                except:
-                    #nothing operation
-                    a=None
-                try:
-                    str_datetime=image.datetime
-                except:
-                    #nothing operation
-                    a=None
-
-                str_datetime_select = None
-                while(True):
-                    # 0	datetime > datetime_digitized > datetime_original
-                    if(mode_permutation==0):
-                        if(str_datetime != None and str_datetime != "" and str_datetime != "0000:00:00 00:00:00"):
-                            str_datetime_select=str_datetime
-                            break
-                        if(str_datetime_digitized != None and str_datetime_digitized != "" and str_datetime_digitized != "0000:00:00 00:00:00"):
-                            str_datetime_select=str_datetime_digitized
-                            break
-                        if(str_datetime_original != None and str_datetime_original != "" and str_datetime_original != "0000:00:00 00:00:00"):
-                            str_datetime_select=str_datetime_original
-                        break
-                    # 1	datetime > datetime_original > datetime_digitized
-                    if(mode_permutation==1):
-                        if(str_datetime != None and str_datetime != "" and str_datetime != "0000:00:00 00:00:00"):
-                            str_datetime_select=str_datetime
-                            break
-                        if(str_datetime_original != None and str_datetime_original != "" and str_datetime_original != "0000:00:00 00:00:00"):
-                            str_datetime_select=str_datetime_original
-                            break
-                        if(str_datetime_digitized != None and str_datetime_digitized != "" and str_datetime_digitized != "0000:00:00 00:00:00"):
-                            str_datetime_select=str_datetime_digitized
-                        break
-                    # 2	datetime_digitized > datetime >datetime_original
-                    if(mode_permutation==2):
-                        if(str_datetime_digitized != None and str_datetime_digitized != "" and str_datetime_digitized != "0000:00:00 00:00:00"):
-                            str_datetime_select=str_datetime_digitized
-                            break
-                        if(str_datetime != None and str_datetime != "" and str_datetime != "0000:00:00 00:00:00"):
-                            str_datetime_select=str_datetime
-                            break
-                        if(str_datetime_original != None and str_datetime_original != "" and str_datetime_original != "0000:00:00 00:00:00"):
-                            str_datetime_select=str_datetime_original
-                        break
-                    # 3	datetime_digitized > datetime_original > datetime
-                    if(mode_permutation==3):
-                        if(str_datetime_digitized != None and str_datetime_digitized != "" and str_datetime_digitized != "0000:00:00 00:00:00"):
-                            str_datetime_select=str_datetime_digitized
-                            break
-                        if(str_datetime_original != None and str_datetime_original != "" and str_datetime_original != "0000:00:00 00:00:00"):
-                            str_datetime_select=str_datetime_original
-                            break
-                        if(str_datetime != None and str_datetime != "" and str_datetime != "0000:00:00 00:00:00"):
-                            str_datetime_select=str_datetime
-                        break
-                    # 4	datetime_original > datetime > datetime_digitized
-                    if(mode_permutation==4):
-                        if(str_datetime_original != None and str_datetime_original != "" and str_datetime_original != "0000:00:00 00:00:00"):
-                            str_datetime_select=str_datetime_original
-                            break
-                        if(str_datetime != None and str_datetime != "" and str_datetime != "0000:00:00 00:00:00"):
-                            str_datetime_select=str_datetime
-                            break
-                        if(str_datetime_digitized != None and str_datetime_digitized != "" and str_datetime_digitized != "0000:00:00 00:00:00"):
-                            str_datetime_select=str_datetime_digitized
-                        break
-                    # 5	datetime_original > datetime_digitized > datetime
-                    if(mode_permutation==5):
-                        if(str_datetime_original != None and str_datetime_original != "" and str_datetime_original != "0000:00:00 00:00:00"):
-                            str_datetime_select=str_datetime_original
-                            break
-                        if(str_datetime_digitized != None and str_datetime_digitized != "" and str_datetime_digitized != "0000:00:00 00:00:00"):
-                            str_datetime_select=str_datetime_digitized
-                            break
-                        if(str_datetime != None and str_datetime != "" and str_datetime != "0000:00:00 00:00:00"):
-                            str_datetime_select=str_datetime
-                        break   
-                if(str_datetime_select == None):
-                    return None
-                
-                try:
-                    a = time.strptime(str_datetime_select,"%Y:%m:%d %H:%M:%S")
-                except ValueError:
-                    return None
-                return a
-'''
+           
 
 def usage():
     print("they call me saturday")
