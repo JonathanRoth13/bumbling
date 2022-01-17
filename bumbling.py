@@ -42,7 +42,7 @@ def main():
 
     #   what to prefix files with
     #   default is "yyyy-mm-dd_"
-    mode_include_prefix = "%Y-%m-%d_" 
+    mode_prefix = "%Y-%m-%d_" 
 
     #   input directory
     path_directory_input = None
@@ -51,7 +51,7 @@ def main():
     path_directory_output = None
 
     try:
-        optlist, args = getopt.getopt(sys.argv[1:],"chrx",["help","i=","p="])
+        optlist, args = getopt.getopt(sys.argv[1:],"chrxy",["help","y=","p="])
     except getopt.GetoptError as err:
         print(err)
         usage()
@@ -81,6 +81,13 @@ def main():
             continue
         if(o=="-x"):
             mode_rename = True
+        if(o=="-y"):
+            mode_prefix = "%Y-%m-%d_" 
+        if(o=="--y"):
+            mode_prefix = a 
+
+
+
         usage()
         sys.exit(2)
 
@@ -118,56 +125,61 @@ def main():
             sys.exit(2)
     #   command line arguments have been verified
 
-    bumbling(mode_copy, mode_include_prefix, mode_permutation, mode_recursive, path_directory_input, path_directory_output)
+    bumbling(mode_copy, mode_prefix, mode_permutation, mode_recursive, path_directory_input, path_directory_output)
 
-def bumbling(mode_copy, mode_include_prefix, mode_permutation, mode_recursive, path_directory_input, path_directory_output):
+def bumbling(mode_copy, mode_prefix, mode_permutation, mode_recursive, path_directory_input, path_directory_output):
+ 
+
+    recursive_str = ""
+    if(mode_recursive):
+        recursive_str = "/**"
 
     #   list of files recognized
     list_files_input=[]
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.png",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.PNG",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.jpg",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.JPG",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.jpeg",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.JPEG",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.exv",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.EXV",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.cr2",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.CR2",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.crw",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.CRW",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.mwr",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.MWR",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.tiff",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.TIFF",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.webp",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.WEBP",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.dng",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.DNG",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.nef",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.NEF",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.pef",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.PEF",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.arw",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.ARW",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.rw2",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.RW2",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.sr2",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.SR2",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.srw",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.SRW",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.orf",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.ORF",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.pgf",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.PGF",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.raf",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.RAF",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.psd",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.PSD",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.jp2",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.JP2",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.heic",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+"/**/*.HEIC",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.png",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.PNG",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.jpg",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.JPG",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.jpeg",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.JPEG",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.exv",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.EXV",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.cr2",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.CR2",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.crw",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.CRW",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.mwr",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.MWR",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.tiff",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.TIFF",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.webp",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.WEBP",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.dng",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.DNG",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.nef",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.NEF",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.pef",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.PEF",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.arw",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.ARW",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.rw2",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.RW2",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.sr2",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.SR2",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.srw",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.SRW",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.orf",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.ORF",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.pgf",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.PGF",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.raf",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.RAF",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.psd",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.PSD",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.jp2",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.JP2",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.heic",recursive=mode_recursive))
+    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.HEIC",recursive=mode_recursive))
 
     list_files_output = list()
 
@@ -218,7 +230,7 @@ def bumbling(mode_copy, mode_include_prefix, mode_permutation, mode_recursive, p
             d = os.path.commonpath([path_directory_input, b])
             e = c.split(".")[-1]
             f = c[:-(len(e)+1)]
-            g=a[1].strftime(mode_include_prefix)
+            g=a[1].strftime(mode_prefix)
             print(a[0],b,c,d,e,f,g,sep="\n",end="\n---\n")
         print("---end---")
 
@@ -252,6 +264,8 @@ def get_exif_datetime(path, mode_permutation):
 
 
 def get_exif_datetime_heic(path, mode_permutation):
+
+    print(path)
     
     #   read exif data
     f = open(path, "rb")

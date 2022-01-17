@@ -1,9 +1,6 @@
 [submodule "exif-py"]
 	path = exif-py
 	url = https://github.com/ianare/exif-py.git
-[submodule "py3exiv2"]
-	path = py3exiv2
-	url = ssh://~jonathanroth@code.launchpad.net/~vincent-vandevyvre/py3exiv2
 [submodule "footgear"]
 	path = footgear
 	url = https://github.com/JonathanRoth13/footgear
