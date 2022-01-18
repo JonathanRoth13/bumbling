@@ -1,6 +1,6 @@
-[submodule "exif-py"]
-	path = exif-py
-	url = https://github.com/ianare/exif-py.git
 [submodule "footgear"]
 	path = footgear
 	url = https://github.com/JonathanRoth13/footgear
+[submodule "pyheif"]
+	path = pyheif
+	url = https://github.com/carsales/pyheif.git
