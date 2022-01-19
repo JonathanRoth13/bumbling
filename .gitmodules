@@ -1,6 +1,3 @@
-[submodule "footgear"]
-	path = footgear
-	url = https://github.com/JonathanRoth13/footgear
-[submodule "pyheif"]
-	path = pyheif
-	url = https://github.com/carsales/pyheif.git
+[submodule "pyexiftool"]
+	path = pyexiftool
+	url = git://github.com/smarnach/pyexiftool.git
