@@ -9,8 +9,7 @@ import getopt
 import sys
 import glob
 from datetime import datetime
-import exifread
-import pyexiv2
+import exiftool
 
 def main():
 
@@ -181,14 +180,31 @@ def bumbling(mode_copy, mode_prefix, mode_permutation, mode_recursive, path_dire
     list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.heic",recursive=mode_recursive))
     list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.HEIC",recursive=mode_recursive))
 
+
+    if(len(list_files_input)==0):
+        return
+
+    data = None
+    with exiftool.ExifTool() as et:
+        data = et.get_tag_batch("EXIF:DateTimeOriginal",list_files_input)
+
+    var = datetime.datetime.strptime("string", "%d/%m/%Y %H:%M:%S")
+
+    for i in range(len(list_files_input)):
+        dtime=datetime.strptime(data[i], "%d/%m/%Y %H:%M:%S")
+        #print(i,list_files_input[i], data[i],sep="\t")
+        print(i,list_files_input[i], dtime,sep="\t")
+    
+    return
+
+
+
+
+
     list_files_output = list()
 
     for path in list_files_input:
-        datetime = None
-        if(path.endswith(".heic") or path.endswith(".HEIC")):
-            datetime = get_exif_datetime_heic(path, mode_permutation)
-        else:
-            datetime = get_exif_datetime(path, mode_permutation)
+        datetime = get_exif_datetime(path, mode_permutation)
         if(datetime != None):
             list_files_output.append([path, datetime])
 
@@ -237,6 +253,10 @@ def bumbling(mode_copy, mode_prefix, mode_permutation, mode_recursive, path_dire
 
 
 def get_exif_datetime(path, mode_permutation):
+
+
+
+    return None
 
     #   read exif data
     f = pyexiv2.metadata.ImageMetadata(path)
