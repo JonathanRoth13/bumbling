@@ -41,10 +41,10 @@ def main():
 
     #   what to prefix files with
     #   default is "yyyy-mm-dd_"
-    mode_prefix = "%Y-%m-%d_" 
+    mode_prefix = "" 
 
     #   input directory
-    path_directory_input = None
+    list_path_directory_input = list()
 
     #   output directory
     path_directory_output = None
@@ -80,20 +80,26 @@ def main():
             continue
         if(o=="-x"):
             mode_rename = True
+            continue
         if(o=="-y"):
             mode_prefix = "%Y-%m-%d_" 
+            continue
         if(o=="--y"):
             mode_prefix = a 
-
-
-
+            continue
         usage()
         sys.exit(2)
 
-
-    if(len(args)==0):
-        path_directory_input=os.getcwd()
-        path_directory_output=os.getcwd()
+    if(len(args)<2):
+        usage()
+        sys.exit(2)
+        #path_directory_input=os.getcwd()
+        #path_directory_output=os.getcwd()
+    list_path_directory_input = args[:-1]
+    path_directory_output = args[:-1]
+    print(list_path_directory_input)
+    sys.exit(0)
+    '''
     elif(len(args)==1):
         path_directory_input=args[0]
         path_directory_output=os.getcwd()
@@ -103,7 +109,7 @@ def main():
     else:
         usage()
         sys.exit(2)
-
+'''
     if(os.path.isdir(path_directory_input)):
         path_directory_input=os.path.abspath(path_directory_input)
     else:
@@ -188,67 +194,13 @@ def bumbling(mode_copy, mode_prefix, mode_permutation, mode_recursive, path_dire
     with exiftool.ExifTool() as et:
         data = et.get_tag_batch("EXIF:DateTimeOriginal",list_files_input)
 
-    var = datetime.datetime.strptime("string", "%d/%m/%Y %H:%M:%S")
-
     for i in range(len(list_files_input)):
-        dtime=datetime.strptime(data[i], "%d/%m/%Y %H:%M:%S")
-        #print(i,list_files_input[i], data[i],sep="\t")
-        print(i,list_files_input[i], dtime,sep="\t")
-    
-    return
+        dtime=None
+        if(data[i] != None):
+            dtime=datetime.strptime(data[i], "%Y:%m:%d %H:%M:%S")
+        #print(list_files_input[i],dtime,sep="\t")
+        print(list_files_input[i])
 
-
-
-
-
-    list_files_output = list()
-
-    for path in list_files_input:
-        datetime = get_exif_datetime(path, mode_permutation)
-        if(datetime != None):
-            list_files_output.append([path, datetime])
-
-
-    if(len(list_files_output)==0):
-        return None
-
-    sort = sorted(list_files_output, key=lambda i:os.path.dirname(i[0]))
-
-
-    yeah = os.path.dirname(sort[0][0])
-    boxes = list()
-    box = list()
-    for a in sort:
-        if(os.path.dirname(a[0])==yeah):
-            box.append(a)
-        else:
-            yeah=os.path.dirname(a[0])
-            boxes.append(box)
-            box=[a]
-    boxes.append(box)
-
-
-    sort_boxes=list()
-
-    for box in boxes:
-        sort_boxes.append(sorted(box, key=lambda i:i[1]))
-
-
-    #for box in sort_boxes:
-    #    for a in box:
-    #        print(a[0],a[1],sep="\n",end="\n---\n")
-    #    print("---end---")
-
-
-    for box in sort_boxes:
-        for a in box:
-            b,c = os.path.split(a[0])
-            d = os.path.commonpath([path_directory_input, b])
-            e = c.split(".")[-1]
-            f = c[:-(len(e)+1)]
-            g=a[1].strftime(mode_prefix)
-            print(a[0],b,c,d,e,f,g,sep="\n",end="\n---\n")
-        print("---end---")
 
 
 
