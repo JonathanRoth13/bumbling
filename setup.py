@@ -8,8 +8,7 @@ author_email="JonathanRoth@protonmail.com",
 url="https://github.com/JonathanRoth13/bumbling",
 packages=find_packages(),
 install_requires=["PyExifTool"],
-#scripts=["bumbling.py" ]
 entry_points={
-        'console_scripts': ['bumbling'=bumbling:main]
+        'console_scripts': ['bumbling=bumbling:main']
     }
 )
