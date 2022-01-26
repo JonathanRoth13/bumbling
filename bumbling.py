@@ -9,6 +9,7 @@ import getopt
 import sys
 import glob
 import math
+import shutil
 from datetime import datetime
 import exiftool
 
@@ -36,6 +37,10 @@ def main():
     #   default is "yyyy-mm-dd_"
     mode_prefix = "%Y-%m-%d_" 
 
+    #   true    print transitions
+    #   false   do not print
+    mode_verbose = False
+
     #   input directory
     list_path_directory_input = list()
 
@@ -44,7 +49,7 @@ def main():
 
     #   verify command line arguments
     try:
-        optlist, args = getopt.getopt(sys.argv[1:],"chrx",["help","y="])
+        optlist, args = getopt.getopt(sys.argv[1:],"chrxv",["help","y="])
     except getopt.GetoptError as err:
         print(err)
         usage()
@@ -59,6 +64,9 @@ def main():
                 continue
         if(o=="-r"):
             mode_recursive = True
+            continue
+        if(o=="-v"):
+            mode_verbose = True
             continue
         if(o=="-x"):
             mode_rename = True
@@ -99,9 +107,9 @@ def main():
             sys.exit(2)
 
     #   all command line arguments have been verified
-    bumbling(mode_copy, mode_prefix, mode_recursive, mode_rename, list_path_directory_input, path_directory_output)
+    bumbling(mode_copy, mode_prefix, mode_recursive, mode_rename, mode_verbose, list_path_directory_input, path_directory_output)
 
-def bumbling(mode_copy, mode_prefix, mode_recursive, mode_rename, list_path_directory_input, path_directory_output):
+def bumbling(mode_copy, mode_prefix, mode_recursive, mode_rename, mode_verbose, list_path_directory_input, path_directory_output):
  
     recursive_str = ""
     if(mode_recursive):
@@ -156,6 +164,7 @@ def bumbling(mode_copy, mode_prefix, mode_recursive, mode_rename, list_path_dire
         list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.heic",recursive=mode_recursive))
         list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.HEIC",recursive=mode_recursive))
 
+    #   end if no input files
     if(len(list_files_input)==0):
         return
 
@@ -163,31 +172,23 @@ def bumbling(mode_copy, mode_prefix, mode_recursive, mode_rename, list_path_dire
     list_files_input=list(set(list_files_input))
     list_files_input.sort()
 
-
-
-    #for a in range(50):
-    #    str_output='{str_0:0>{str_1}}'.format(str_0=str(a),str_1=str(pad))
-    #    print(str_output)
-    #return
-
     #   read exif data from input files
     data = None
     with exiftool.ExifTool() as et:
         data = et.get_tag_batch("EXIF:DateTimeOriginal",list_files_input)
 
-    #   sort by date, ignore files without exif data
-    sort=list()
-    for i in range(len(list_files_input)):
-            if(data[i] != None):
-                #sort.append((list_files_input[i], datetime.strptime(data[i], "%Y:%m:%d %H:%M:%S")))
-                sort.append((datetime.strptime(data[i], "%Y:%m:%d %H:%M:%S"),list_files_input[i]))
-    sort.sort()
 
-
-
-    #   calculate new filenames
+    #   calculate new file names
     trans=list()
+
     if(mode_rename):
+
+        #   sort by date, ignore files without exif data
+        sort=list()
+        for i in range(len(list_files_input)):
+                if(data[i] != None):
+                    sort.append((datetime.strptime(data[i], "%Y:%m:%d %H:%M:%S"),list_files_input[i]))
+        sort.sort()
 
         #   calculate padding
         pad=math.ceil(math.log(len(sort),10))
@@ -195,40 +196,46 @@ def bumbling(mode_copy, mode_prefix, mode_recursive, mode_rename, list_path_dire
             pad=pad+1
         index=0
 
+        #   map old filenames to new filenames
         for i in range(len(sort)):
-            trans.append(sort[i][0].strftime(mode_prefix)+'{str_0:0>{str_1}}'.format(str_0=str(index),str_1=str(pad))+os.path.splitext(sort[i][1])[1])
+            trans.append((sort[i][1],sort[i][0].strftime(mode_prefix)+'{str_0:0>{str_1}}'.format(str_0=str(index),str_1=str(pad))+os.path.splitext(sort[i][1])[1]))
             index=index+1
         
     else:
+        
+        #   sort by filename, ignore files without exif data
+        sort=list()
+        for i in range(len(list_files_input)):
+                if(data[i] != None):
+                    sort.append((os.path.basename(list_files_input[i]),datetime.strptime(data[i], "%Y:%m:%d %H:%M:%S"),list_files_input[i]))
+        sort.sort()
+
+        #   map old filenames to new filenames
         index=0
-        last=None
+        last=""
         for i in range(len(sort)):
-            name = os.path.basename(sort[i])
+            #   ensure that no two files have the same name
+            if(sort[i][0]==last):
+                index=index+1
+                x,y=os.path.splitext(sort[i][0])
+                trans.append((sort[i][2],sort[i][1].strftime(mode_prefix)+x+"("+str(index)+")"+y))
+            else:
+                index=0
+                last=sort[i][0]
+                trans.append((sort[i][2],sort[i][1].strftime(mode_prefix)+sort[i][0]))
 
-            index=0
-            if(data[i] != None):
-                dtime=datetime.strptime(data[i], "%Y:%m:%d %H:%M:%S")
+    #   write files
 
-    for i in range(len(trans)):
-        print(trans[i])
+    if(mode_copy):
+        for i in range(len(trans)):
+            shutil.copy2(trans[i][0],os.path.join(path_directory_output,trans[i][1]))
+    else:
+        for i in range(len(trans)):
+            shutil.move(trans[i][0],os.path.join(path_directory_output,trans[i][1]))
 
-
-
-    return
-
-
-
-
-
-
-    for i in range(len(list_files_input)):
-        index=0
-        if(data[i] != None):
-            dtime=datetime.strptime(data[i], "%Y:%m:%d %H:%M:%S")
-
-
-
-
+    if(mode_verbose):
+        for i in range(len(trans)):
+            print(trans[i][0],"-->",os.path.join(path_directory_output,trans[i][1]),sep="\t")
 
 def usage():
     print("usage they call me saturday")
