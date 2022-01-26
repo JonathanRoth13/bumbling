@@ -8,6 +8,7 @@ import time
 import getopt
 import sys
 import glob
+import math
 from datetime import datetime
 import exiftool
 
@@ -23,14 +24,6 @@ def main():
     #   false   do not display help message
     mode_help = False
 
-    # 0	datetime > datetime_digitized > datetime_original
-    # 1	datetime > datetime_original > datetime_digitized
-    # 2	datetime_digitized > datetime > datetime_original
-    # 3	datetime_digitized > datetime_original > datetime
-    # 4	datetime_original > datetime > datetime_digitized
-    # 5	datetime_original > datetime_digitized > datetime
-    mode_permutation = 0
-
     #   true    recurse through directories and do this for all files
     #   false   do not recurse
     mode_recursive = False
@@ -41,7 +34,7 @@ def main():
 
     #   what to prefix files with
     #   default is "yyyy-mm-dd_"
-    mode_prefix = "" 
+    mode_prefix = "%Y-%m-%d_" 
 
     #   input directory
     list_path_directory_input = list()
@@ -49,8 +42,9 @@ def main():
     #   output directory
     path_directory_output = None
 
+    #   verify command line arguments
     try:
-        optlist, args = getopt.getopt(sys.argv[1:],"chrxy",["help","y=","p="])
+        optlist, args = getopt.getopt(sys.argv[1:],"chrx",["help","y="])
     except getopt.GetoptError as err:
         print(err)
         usage()
@@ -63,26 +57,11 @@ def main():
                 usage()
                 sys.exit(0)
                 continue
-        if(o=="--p"):
-            if not a.isnumeric():
-                print("--p must specify an integer")
-                usage()
-                sys.exit(2)
-            x = int(a)
-            if(x<0 or x>5):
-                print("--p must be between 0 and 5")
-                usage()
-                sys.exit(2)
-            mode_permutation = x
-            continue
         if(o=="-r"):
             mode_recursive = True
             continue
         if(o=="-x"):
             mode_rename = True
-            continue
-        if(o=="-y"):
-            mode_prefix = "%Y-%m-%d_" 
             continue
         if(o=="--y"):
             mode_prefix = a 
@@ -93,240 +72,166 @@ def main():
     if(len(args)<2):
         usage()
         sys.exit(2)
-        #path_directory_input=os.getcwd()
-        #path_directory_output=os.getcwd()
     list_path_directory_input = args[:-1]
-    path_directory_output = args[:-1]
-    print(list_path_directory_input)
-    sys.exit(0)
-    '''
-    elif(len(args)==1):
-        path_directory_input=args[0]
-        path_directory_output=os.getcwd()
-    elif(len(args)==2):
-        path_directory_input=args[0]
-        path_directory_output=args[1]
-    else:
-        usage()
-        sys.exit(2)
-'''
-    if(os.path.isdir(path_directory_input)):
-        path_directory_input=os.path.abspath(path_directory_input)
-    else:
-        if(os.path.isdir(os.path.abspath(path_directory_input))):
-            path_directory_input = os.path.abspath(path_directory_input)
+    path_directory_output = args[-1]
+
+    #   verify paths
+    for i in range(len(list_path_directory_input)):
+        path=list_path_directory_input[i]
+        if(os.path.isdir(path)):
+            list_path_directory_input[i]=os.path.abspath(path)
         else:
-            print(path_directory_input," is not a valid path",sep="")
-            usage()
-            sys.exit(2)
+            if(os.path.isdir(os.path.abspath(path))):
+                list_path_directory_input[i] = os.path.abspath(path)
+            else:
+                print("\"",list_path_directory_input[i],"\" is not a valid path",sep="")
+                usage()
+                sys.exit(2)
+
     if(os.path.isdir(path_directory_output)):
         path_directory_output=os.path.abspath(path_directory_output)
     else:
         if(os.path.isdir(os.path.abspath(path_directory_output))):
             path_directory_output = os.path.abspath(path_directory_output)
         else:
-            print(path_directory_output," is not a valid path",sep="")
+            print("\"",path_directory_output,"\" is not a valid path",sep="")
             usage()
             sys.exit(2)
-    #   command line arguments have been verified
 
-    bumbling(mode_copy, mode_prefix, mode_permutation, mode_recursive, path_directory_input, path_directory_output)
+    #   all command line arguments have been verified
+    bumbling(mode_copy, mode_prefix, mode_recursive, mode_rename, list_path_directory_input, path_directory_output)
 
-def bumbling(mode_copy, mode_prefix, mode_permutation, mode_recursive, path_directory_input, path_directory_output):
+def bumbling(mode_copy, mode_prefix, mode_recursive, mode_rename, list_path_directory_input, path_directory_output):
  
-
     recursive_str = ""
     if(mode_recursive):
         recursive_str = "/**"
 
     #   list of files recognized
     list_files_input=[]
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.png",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.PNG",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.jpg",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.JPG",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.jpeg",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.JPEG",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.exv",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.EXV",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.cr2",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.CR2",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.crw",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.CRW",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.mwr",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.MWR",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.tiff",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.TIFF",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.webp",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.WEBP",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.dng",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.DNG",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.nef",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.NEF",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.pef",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.PEF",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.arw",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.ARW",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.rw2",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.RW2",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.sr2",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.SR2",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.srw",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.SRW",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.orf",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.ORF",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.pgf",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.PGF",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.raf",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.RAF",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.psd",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.PSD",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.jp2",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.JP2",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.heic",recursive=mode_recursive))
-    list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.HEIC",recursive=mode_recursive))
-
+    for i in range(len(list_path_directory_input)):
+        path_directory_input=list_path_directory_input[i]
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.png",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.PNG",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.jpg",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.JPG",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.jpeg",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.JPEG",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.exv",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.EXV",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.cr2",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.CR2",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.crw",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.CRW",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.mwr",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.MWR",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.tiff",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.TIFF",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.webp",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.WEBP",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.dng",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.DNG",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.nef",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.NEF",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.pef",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.PEF",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.arw",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.ARW",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.rw2",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.RW2",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.sr2",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.SR2",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.srw",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.SRW",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.orf",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.ORF",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.pgf",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.PGF",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.raf",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.RAF",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.psd",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.PSD",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.jp2",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.JP2",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.heic",recursive=mode_recursive))
+        list_files_input.extend(glob.glob(path_directory_input+recursive_str+"/*.HEIC",recursive=mode_recursive))
 
     if(len(list_files_input)==0):
         return
 
+    #   remove duplicates and sort
+    list_files_input=list(set(list_files_input))
+    list_files_input.sort()
+
+
+
+    #for a in range(50):
+    #    str_output='{str_0:0>{str_1}}'.format(str_0=str(a),str_1=str(pad))
+    #    print(str_output)
+    #return
+
+    #   read exif data from input files
     data = None
     with exiftool.ExifTool() as et:
         data = et.get_tag_batch("EXIF:DateTimeOriginal",list_files_input)
 
+    #   sort by date, ignore files without exif data
+    sort=list()
     for i in range(len(list_files_input)):
-        dtime=None
+            if(data[i] != None):
+                #sort.append((list_files_input[i], datetime.strptime(data[i], "%Y:%m:%d %H:%M:%S")))
+                sort.append((datetime.strptime(data[i], "%Y:%m:%d %H:%M:%S"),list_files_input[i]))
+    sort.sort()
+
+
+
+    #   calculate new filenames
+    trans=list()
+    if(mode_rename):
+
+        #   calculate padding
+        pad=math.ceil(math.log(len(sort),10))
+        if(pad % 2 != 0):
+            pad=pad+1
+        index=0
+
+        for i in range(len(sort)):
+            trans.append(sort[i][0].strftime(mode_prefix)+'{str_0:0>{str_1}}'.format(str_0=str(index),str_1=str(pad))+os.path.splitext(sort[i][1])[1])
+            index=index+1
+        
+    else:
+        index=0
+        last=None
+        for i in range(len(sort)):
+            name = os.path.basename(sort[i])
+
+            index=0
+            if(data[i] != None):
+                dtime=datetime.strptime(data[i], "%Y:%m:%d %H:%M:%S")
+
+    for i in range(len(trans)):
+        print(trans[i])
+
+
+
+    return
+
+
+
+
+
+
+    for i in range(len(list_files_input)):
+        index=0
         if(data[i] != None):
             dtime=datetime.strptime(data[i], "%Y:%m:%d %H:%M:%S")
-        #print(list_files_input[i],dtime,sep="\t")
-        print(list_files_input[i])
 
 
 
 
-def get_exif_datetime(path, mode_permutation):
-
-
-
-    return None
-
-    #   read exif data
-    f = pyexiv2.metadata.ImageMetadata(path)
-    f.read()
-
-    #   find datetime data
-    dtime=None
-    dtime_original=None
-    dtime_digitized=None
-    try:
-        dtime=f.__getitem__("Exif.Image.DateTime").value
-    except KeyError:
-        a=None
-    try:
-        dtime_original=f.__getitem__("Exif.Photo.DateTimeOriginal").value
-    except KeyError:
-        a=None
-    try:
-        dtime_digitized=f.__getitem__("Exif.Photo.DateTimeDigitized").value
-    except KeyError:
-        a=None
-
-    return get_datetime_helper(dtime, dtime_original, dtime_digitized, mode_permutation)
-
-
-
-def get_exif_datetime_heic(path, mode_permutation):
-
-    print(path)
-    
-    #   read exif data
-    f = open(path, "rb")
-    tags = exifread.process_file(f, details=False)
-    f.close()
-
-    #   find datetime data
-    dtime=None
-    dtime_original=None
-    dtime_digitized=None
-    try:
-        #dtime=datetime.strptime(tags["Image DateTime"].values, "%d/%m/%Y %H:%M:%S")
-        dtime=tags["Image DateTime"].values
-    except (KeyError, AttributeError) as e:
-        a=None
-    try:
-        #datetime_original=datetime.strptime(tags["EXIF DateTimeDigitized"].values, "%d/%m/%Y %H:%M:%S")
-        dtime_original=tags["EXIF DateTimeDigitized"].values
-    except (KeyError, AttributeError) as e:
-        a=None
-    try:
-        #dtime_digitized=datetime.strptime(tags["EXIF DateTimeOriginal"].values, "%d/%m/%Y %H:%M:%S")
-        dtime_digitized=tags["EXIF DateTimeOriginal"].values
-    except (KeyError, AttributeError) as e:
-        a=None
-
-    if(dtime != None):
-        dtime = datetime.strptime(dtime, "%Y:%m:%d %H:%M:%S")
-    if(dtime_original != None):
-        dtime_original = datetime.strptime(dtime_original, "%Y:%m:%d %H:%M:%S")
-    if(dtime != None):
-        dtime_diditized = datetime.strptime(dtime_digitized, "%Y:%m:%d %H:%M:%S")
-
-    return get_datetime_helper(dtime, dtime_original, dtime_digitized, mode_permutation)
-
-
-def get_datetime_helper(dtime, dtime_original, dtime_digitized, mode_permutation):
-    if(mode_permutation==0):
-        if(dtime != None):
-            return dtime
-        if(dtime_digitized != None):
-            return dtime_digitized
-        if(dtime_original != None):
-            return dtime_original
-    # 1	datetime > datetime_original > datetime_digitized
-    if(mode_permutation==1):
-        if(dtime != None):
-            return dtime
-        if(dtime_original != None):
-            return dtime_original
-        if(dtime_digitized != None):
-            return dtime_digitized
-    # 2	datetime_digitized > datetime >datetime_original
-    if(mode_permutation==2):
-        if(dtime_digitized != None):
-            return dtime_digitized
-        if(dtime != None):
-            return dtime
-        if(dtime_original != None):
-            return dtime_original
-    # 3	datetime_digitized > datetime_original > datetime
-    if(mode_permutation==3):
-        if(dtime_digitized != None):
-            return dtime_digitized
-        if(dtime_original != None):
-            return dtime_original
-        if(dtime != None):
-            return dtime
-    # 4	datetime_original > datetime > datetime_digitized
-    if(mode_permutation==4):
-        if(dtime_original != None):
-            return dtime_original
-        if(dtime != None):
-            return dtime
-        if(dtime_digitized != None):
-            return dtime_digitized
-    # 5	datetime_original > datetime_digitized > datetime
-    if(mode_permutation==5):
-        if(dtime_original != None):
-            return dtime_original
-        if(dtime_digitized != None):
-            return dtime_digitized
-        if(dtime != None):
-            return dtime
-    return None
-           
 
 def usage():
-    print("they call me saturday")
+    print("usage they call me saturday")
 
 if __name__ == "__main__":
     main()
