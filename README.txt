@@ -8,4 +8,4 @@ To install: "pip3 install -e ."
 
 Once installed, run on the command line using the "bumbling" command.
 
-Documentation is available at: https://jonathanroth13.com/projects/bumbling_documentation/
+Documentation is available at: https://jonathanroth13.com/projects/bumbling/
