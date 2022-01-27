@@ -4,7 +4,6 @@
 #   2021-10-23
 
 import os
-import time
 import getopt
 import sys
 import glob
@@ -13,6 +12,7 @@ import shutil
 from datetime import datetime
 import exiftool
 
+
 def main():
 
     #   *** begin argument validation ***
@@ -20,10 +20,6 @@ def main():
     #   true    copy into output directory
     #   false   do not copy into output directory
     mode_copy = False
-
-    #   true    display help message
-    #   false   do not display help message
-    mode_help = False
 
     #   true    recurse through directories and do this for all files
     #   false   do not recurse
@@ -35,7 +31,7 @@ def main():
 
     #   what to prefix files with
     #   default is "yyyy-mm-dd_"
-    mode_prefix = "%Y-%m-%d_" 
+    mode_prefix = "%Y-%m-%d_"
 
     #   true    print transitions
     #   false   do not print
@@ -49,7 +45,7 @@ def main():
 
     #   verify command line arguments
     try:
-        optlist, args = getopt.getopt(sys.argv[1:],"chrxv",["help","y="])
+        optlist, args = getopt.getopt(sys.argv[1:],"chrxv", ["help", "y="])
     except getopt.GetoptError as err:
         print(err)
         usage()
@@ -225,7 +221,6 @@ def bumbling(mode_copy, mode_prefix, mode_recursive, mode_rename, mode_verbose, 
                 trans.append((sort[i][2],sort[i][1].strftime(mode_prefix)+sort[i][0]))
 
     #   write files
-
     if(mode_copy):
         for i in range(len(trans)):
             shutil.copy2(trans[i][0],os.path.join(path_directory_output,trans[i][1]))
@@ -233,12 +228,30 @@ def bumbling(mode_copy, mode_prefix, mode_recursive, mode_rename, mode_verbose, 
         for i in range(len(trans)):
             shutil.move(trans[i][0],os.path.join(path_directory_output,trans[i][1]))
 
+    #   print transitions
     if(mode_verbose):
         for i in range(len(trans)):
             print(trans[i][0],"-->",os.path.join(path_directory_output,trans[i][1]),sep="\t")
 
 def usage():
-    print("usage they call me saturday")
+    print("""
+usage: bumbling [-c] [-h] [-v] [-x] [--y=STRING] INPUT [INPUT ...] OUTPUT
+
+python module for chronologically ordering image files by reading exif data 
+
+positional arguments:
+  INPUT                	directory to search for image files
+  OUTPUT		directory to move image files to 
+
+optional arguments:
+  -c                    copy files instead of moving them
+  -h, --help            show this help message and exit
+  -r                    recursively sort input directories
+  -v                    verbose
+  -x                    rename files in chronological order
+  --y=STRING            prepend filenames with format codes specified with STRING 
+  	                	"%Y-%m-%d_" is used by default
+""")
 
 if __name__ == "__main__":
     main()
