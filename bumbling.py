@@ -509,8 +509,7 @@ def bumbling(
 
 def usage():
     print(
-        """
-usage: bumbling [-c] [-h] [-v] [-x] [--y=STRING] INPUT [INPUT ...] OUTPUT
+"""usage: bumbling [-c] [-h] [-v] [-x] [--y=STRING] INPUT [INPUT ...] OUTPUT
 
 python module for chronologically ordering image files by reading exif data
 
@@ -525,8 +524,7 @@ optional arguments:
   -v                    verbose
   -x                    rename files in chronological order
   --y=STRING            prepend filenames with format codes specified with STRING
-                        "%Y-%m-%d_" is used by default
-"""
+                        "%Y-%m-%d_" is used by default"""
     )
 
 
