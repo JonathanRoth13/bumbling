@@ -4,8 +4,4 @@ Bumbling relies on the "exiftool" command-line tool which is available here: htt
 
 The source code is available at this github repository: https://github.com/JonathanRoth13/bumbling.git
 
-To install: "pip3 install -e ."
-
-Once installed, run on the command line using the "bumbling" command.
-
 Documentation is available at: https://jonathanroth13.com/projects/bumbling/

@@ -509,7 +509,7 @@ def bumbling(
 
 def usage():
     print(
-"""usage: bumbling [-c] [-h] [-v] [-x] [--y=STRING] INPUT [INPUT ...] OUTPUT
+        """usage: bumbling [-c] [-h] [-v] [-x] [--y=STRING] INPUT [INPUT ...] OUTPUT
 
 python module for chronologically ordering image files by reading exif data
 
